@@ -172,8 +172,10 @@ function crearArbol($especie_id, $ubicacion_geografica, $estado, $precio, $taman
 
 function obtenerArbolesPorAmigo($amigo_id) {
     $conn = getConnection();
-    $sql = "SELECT a.* FROM arboles a 
+    $sql = "SELECT a.id, e.nombre_comercial AS especie, a.ubicacion_geografica, a.precio 
+            FROM arboles a 
             JOIN amigo_arbol aa ON a.id = aa.arbol_id 
+            JOIN especies e ON a.especie_id = e.id 
             WHERE aa.amigo_id = ?";
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param($stmt, "i", $amigo_id);
@@ -184,6 +186,7 @@ function obtenerArbolesPorAmigo($amigo_id) {
     mysqli_close($conn);
     return $arboles;
 }
+
 
 function registrarActualizacion($arbol_id, $tamano, $estado) {
     $conn = getConnection();
@@ -203,6 +206,81 @@ function obtenerAmigos() {
     $amigos = mysqli_fetch_all($result, MYSQLI_ASSOC);
     mysqli_close($conn);
     return $amigos;
+}
+
+function obtenerArbolesDisponibles() {
+    $conn = getConnection();
+    $sql = "SELECT a.id, e.nombre_comercial AS especie, a.ubicacion_geografica, a.precio 
+            FROM arboles a 
+            JOIN especies e ON a.especie_id = e.id 
+            WHERE a.estado = 'Disponible'";
+    
+    $result = mysqli_query($conn, $sql);
+    $arboles = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    mysqli_close($conn);
+    return $arboles;
+}
+
+function obtenerArbolPorId($arbol_id) {
+    $conn = getConnection();
+    $sql = "SELECT a.*, e.nombre_comercial 
+            FROM arboles a 
+            JOIN especies e ON a.especie_id = e.id 
+            WHERE a.id = ?";
+    
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $arbol_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $arbol = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    mysqli_close($conn);
+    
+    return $arbol;
+}
+
+
+function registrarCompra($usuario_id, $arbol_id) {
+    $conn = getConnection();
+    
+    // Inserta el registro de compra en la tabla de relación amigo-arbol
+    $sql = "INSERT INTO amigo_arbol (amigo_id, arbol_id) VALUES (?, ?)";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $usuario_id, $arbol_id);
+    
+    $result = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    
+    return $result; // Retorna verdadero si se registró correctamente
+}
+
+function actualizarEstadoArbol($arbol_id, $nuevo_estado) {
+    $conn = getConnection();
+    
+    // Actualiza el estado del árbol en la base de datos
+    $sql = "UPDATE arboles SET estado = ? WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "si", $nuevo_estado, $arbol_id);
+    
+    $result = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    
+    return $result; // Retorna verdadero si se actualizó correctamente
+}
+
+function perteneceAlUsuario($usuario_id, $arbol_id) {
+    $conn = getConnection();
+    $sql = "SELECT * FROM arboles a 
+            JOIN amigo_arbol aa ON a.id = aa.arbol_id 
+            WHERE aa.amigo_id = ? AND a.id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $usuario_id, $arbol_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $existe = mysqli_num_rows($result) > 0;
+    mysqli_stmt_close($stmt);
+    mysqli_close($conn);
+    return $existe;
 }
 
 ?>

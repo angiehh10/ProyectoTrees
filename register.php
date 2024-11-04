@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre_usuario = $_POST['nombre_usuario'];
     $email = $_POST['email'];
     $contrasena = $_POST['contrasena'];
-    $rol = 'Amigo'; // Asumimos que solo los amigos pueden registrarse desde este formulario
+    $rol = 'Amigo'; 
     $nombre = $_POST['nombre'];
     $apellidos = $_POST['apellidos'];
     $telefono = $_POST['telefono'];
