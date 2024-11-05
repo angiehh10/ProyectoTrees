@@ -6,7 +6,7 @@ $password = "";
 $database = "mytrees";
 
 // Configuración del correo
-$admin_email = "angiehhlobo10@gmail.com";
+$admin_email = "proyectoka123@gmail.com";
 $subject = "Recordatorio: Actualización de árboles desactualizados";
 
 // Conectar a la base de datos
@@ -37,7 +37,7 @@ if ($result->num_rows > 0) {
     }
 
     // Configuración del correo
-    $headers = "From: sandovalkiany@gmail.com\r\n";
+    $headers = "From: angiehh1724@gmail.com\r\n";
     $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
     // Enviar el correo
