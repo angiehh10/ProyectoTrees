@@ -172,10 +172,10 @@ function crearArbol($especie_id, $ubicacion_geografica, $estado, $precio, $taman
 
 function obtenerArbolesPorAmigo($amigo_id) {
     $conn = getConnection();
-    $sql = "SELECT a.id, e.nombre_comercial AS especie, a.ubicacion_geografica, a.precio 
-            FROM arboles a 
-            JOIN amigo_arbol aa ON a.id = aa.arbol_id 
-            JOIN especies e ON a.especie_id = e.id 
+    $sql = "SELECT a.id, a.tamano, a.ubicacion_geografica, a.estado, a.precio, a.foto, e.nombre_comercial AS especie, a.especie_id
+            FROM arboles a
+            JOIN amigo_arbol aa ON a.id = aa.arbol_id
+            JOIN especies e ON a.especie_id = e.id
             WHERE aa.amigo_id = ?";
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param($stmt, "i", $amigo_id);
@@ -187,17 +187,17 @@ function obtenerArbolesPorAmigo($amigo_id) {
     return $arboles;
 }
 
-
-function registrarActualizacion($arbol_id, $tamano, $estado) {
+function registrarActualizacion($arbol_id, $tamano, $estado, $fecha_actualizacion) {
     $conn = getConnection();
-    $sql = "INSERT INTO actualizaciones (arbol_id, tamano, estado, fecha) VALUES (?, ?, ?, NOW())";
+    $sql = "INSERT INTO actualizaciones (arbol_id, tamano, estado, fecha_actualizacion) VALUES (?, ?, ?, ?)";
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "iss", $arbol_id, $tamano, $estado);
+    mysqli_stmt_bind_param($stmt, "isss", $arbol_id, $tamano, $estado, $fecha_actualizacion);
     $result = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     mysqli_close($conn);
     return $result;
 }
+
 
 function obtenerAmigos() {
     $conn = getConnection();
@@ -237,6 +237,15 @@ function obtenerArbolPorId($arbol_id) {
     mysqli_close($conn);
     
     return $arbol;
+}
+
+function obtenerArboles() {
+    $conn = getConnection();
+    $sql = "SELECT id, especie_id, ubicacion_geografica, estado, tamano FROM arboles";
+    $result = mysqli_query($conn, $sql);
+    $arboles = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    mysqli_close($conn);
+    return $arboles;
 }
 
 
@@ -282,5 +291,54 @@ function perteneceAlUsuario($usuario_id, $arbol_id) {
     mysqli_close($conn);
     return $existe;
 }
+
+function obtenerNombreAmigo($amigo_id) {
+    $conn = getConnection();
+    $sql = "SELECT nombre FROM usuarios WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $amigo_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $nombre = null;
+
+    if ($row = mysqli_fetch_assoc($result)) {
+        $nombre = $row['nombre'];
+    }
+
+    mysqli_stmt_close($stmt);
+    mysqli_close($conn);
+    return $nombre;
+}
+
+function actualizarArbol($arbol_id, $especie_id, $ubicacion_geografica, $estado, $tamano, $foto_url = null, $foto_upload = null) {
+    $conn = getConnection();
+    
+    // Procesar la imagen
+    $foto_path = null;
+    if ($foto_upload && $foto_upload['error'] === UPLOAD_ERR_OK) {
+        $foto_path = 'uploads/' . basename($foto_upload['name']);
+        move_uploaded_file($foto_upload['tmp_name'], $foto_path);
+    } elseif ($foto_url) {
+        $foto_path = $foto_url;
+    }
+
+    // Si no se carga una nueva imagen, mantener la foto existente en la base de datos
+    if ($foto_path) {
+        $sql = "UPDATE arboles SET especie_id = ?, ubicacion_geografica = ?, estado = ?, tamano = ?, foto = ? WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "issssi", $especie_id, $ubicacion_geografica, $estado, $tamano, $foto_path, $arbol_id);
+    } else {
+        $sql = "UPDATE arboles SET especie_id = ?, ubicacion_geografica = ?, estado = ?, tamano = ? WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "isssi", $especie_id, $ubicacion_geografica, $estado, $tamano, $arbol_id);
+    }
+
+    $result = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    mysqli_close($conn);
+    return $result;
+}
+
+//
 
 ?>

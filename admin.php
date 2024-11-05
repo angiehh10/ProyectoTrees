@@ -5,6 +5,7 @@ include 'utils/functions.php';
 $totalAmigos = countAmigos();
 $totalArbolesDisponibles = countArbolesDisponibles();
 $totalArbolesVendidos = countArbolesVendidos();
+$arboles = obtenerArboles();
 
 // Variables para mensajes
 $mensaje = '';
@@ -40,30 +41,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    // Acción para árboles
-    elseif (isset($_POST['accion_arbol']) && $_POST['accion_arbol'] === 'crear') {
-        $especie_id = $_POST['especie_id'];
-        $ubicacion_geografica = $_POST['ubicacion_geografica'];
-        $estado = $_POST['estado'];
-        $precio = $_POST['precio'];
-        $tamano = $_POST['tamano'];
+// Acción para árboles
+elseif (isset($_POST['accion_arbol']) && $_POST['accion_arbol'] === 'crear') {
+    $especie_id = $_POST['especie_id'];
+    $ubicacion_geografica = $_POST['ubicacion_geografica'];
+    $estado = $_POST['estado'];
+    $precio = $_POST['precio'];
+    $tamano = $_POST['tamano'];
 
-        // Manejo de la imagen: URL o archivo subido
-        $foto = null;
+    // Manejo de la imagen: archivo subido
+    $foto = null;
+    if (isset($_FILES['foto_upload']) && $_FILES['foto_upload']['error'] === UPLOAD_ERR_OK) {
+        $nombreArchivo = basename($_FILES['foto_upload']['name']);
+        $directorioDestino = 'uploads/' . $nombreArchivo;
 
-        if (!empty($_POST['foto_url'])) {
-            // Si se proporciona una URL, usar esa URL para la foto
-            $foto = $_POST['foto_url'];
-        } elseif (isset($_FILES['foto_upload']) && $_FILES['foto_upload']['error'] === UPLOAD_ERR_OK) {
-            // Si se sube un archivo, manejar la carga y almacenar la ruta del archivo
-            $nombreArchivo = basename($_FILES['foto_upload']['name']);
-            $directorioDestino = 'uploads/' . $nombreArchivo;
+        // Crear el directorio si no existe
+        if (!file_exists('uploads')) {
+            mkdir('uploads', 0777, true);
+        }
 
-            // Crear el directorio si no existe
-            if (!file_exists('uploads')) {
-                mkdir('uploads', 0777, true);
-            }
-
+        // Verificar si la imagen ya existe en el directorio
+        if (file_exists($directorioDestino)) {
+            $foto = $directorioDestino; // Usa la imagen existente
+        } else {
             // Mover el archivo subido a la carpeta de destino
             if (move_uploaded_file($_FILES['foto_upload']['tmp_name'], $directorioDestino)) {
                 $foto = $directorioDestino; // Guarda la ruta del archivo en la base de datos
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Error al cargar la imagen.";
             }
         }
-
+    }
         // Crear el árbol con la información procesada
         if (crearArbol($especie_id, $ubicacion_geografica, $estado, $precio, $tamano, $foto)) {
             $mensaje = "Árbol creado exitosamente.";
@@ -79,12 +79,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Error al crear el árbol.";
         }
     }
+   // Acción para árboles
+   elseif (isset($_POST['accion_arbol']) && $_POST['accion_arbol'] === 'crear') {
+    $especie_id = $_POST['especie_id'];
+    $ubicacion_geografica = $_POST['ubicacion_geografica'];
+    $estado = $_POST['estado'];
+    $tamano = $_POST['tamano'];
+
+    // Manejo de la imagen: archivo subido
+    $foto = null;
+    if (isset($_FILES['foto_upload']) && $_FILES['foto_upload']['error'] === UPLOAD_ERR_OK) {
+        $nombreArchivo = basename($_FILES['foto_upload']['name']);
+        $directorioDestino = 'uploads/' . $nombreArchivo;
+
+        // Crear el directorio si no existe
+        if (!file_exists('uploads')) {
+            mkdir('uploads', 0777, true);
+        }
+
+        // Verificar si la imagen ya existe en el directorio
+        if (file_exists($directorioDestino)) {
+            $foto = $directorioDestino; // Usa la imagen existente
+        } else {
+            // Mover el archivo subido a la carpeta de destino
+            if (move_uploaded_file($_FILES['foto_upload']['tmp_name'], $directorioDestino)) {
+                $foto = $directorioDestino; // Guarda la ruta del archivo en la base de datos
+            } else {
+                $error = "Error al cargar la imagen.";
+            }
+        }
+    }
+
+    // Crear el árbol con la información procesada
+    if (crearArbol($especie_id, $ubicacion_geografica, $estado, $tamano, $foto)) {
+        $mensaje = "Árbol creado exitosamente.";
+    } else {
+        $error = "Error al crear el árbol.";
+    }
+}
+
+// Acción para actualizar el árbol
+    elseif (isset($_POST['accion_arbol']) && $_POST['accion_arbol'] === 'actualizar') {
+        $arbol_id = $_POST['arbol_id'];
+        $especie_id = $_POST['especie_id'];
+        $ubicacion_geografica = $_POST['ubicacion_geografica'];
+        $estado = $_POST['estado'];
+        $tamano = $_POST['tamano'];
+
+        // Manejo de la imagen en actualización
+        $foto = null;
+        if (isset($_FILES['foto_upload']) && $_FILES['foto_upload']['error'] === UPLOAD_ERR_OK) {
+            $nombreArchivo = basename($_FILES['foto_upload']['name']);
+            $directorioDestino = 'uploads/' . $nombreArchivo;
+
+            if (!file_exists('uploads')) {
+                mkdir('uploads', 0777, true);
+            }
+
+            // Verificar si la imagen ya existe en el directorio
+            if (file_exists($directorioDestino)) {
+                $foto = $directorioDestino; // Usa la imagen existente
+            } else {
+                // Mover el archivo subido a la carpeta de destino
+                if (move_uploaded_file($_FILES['foto_upload']['tmp_name'], $directorioDestino)) {
+                    $foto = $directorioDestino;
+                } else {
+                    $error = "Error al cargar la imagen.";
+                }
+            }
+        }
+
+        // Actualizar el árbol con los datos y la foto
+        if (actualizarArbol($arbol_id, $especie_id, $ubicacion_geografica, $estado, $tamano, $foto)) {
+            $mensaje = "Árbol actualizado exitosamente.";
+        } else {
+            $error = "Error al actualizar el árbol.";
+        }
+    }
+
     // Acción para registrar actualización de árbol
-    elseif (isset($_POST['accion_actualizacion'])) {
+    elseif (isset($_POST['accion_actualizacion']) && $_POST['accion_actualizacion'] === 'registrar') {
         $arbol_id = $_POST['arbol_id'];
         $tamano = $_POST['tamano'];
         $estado = $_POST['estado'];
-        if (registrarActualizacion($arbol_id, $tamano, $estado)) {
+
+        // Procesar la fecha de actualización
+        $fecha_actualizacion = date('Y-m-d'); // Fecha de hoy como valor predeterminado
+        if ($_POST['fecha_opcion'] === 'manual' && !empty($_POST['fecha_manual_input'])) {
+            $fecha_actualizacion = $_POST['fecha_manual_input'];
+        }
+
+        // Llamar a la función para registrar la actualización
+        if (registrarActualizacion($arbol_id, $tamano, $estado, $fecha_actualizacion)) {
             $mensaje = "Actualización registrada exitosamente.";
         } else {
             $error = "Error al registrar la actualización.";
@@ -228,7 +314,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="mb-3">
                     <label for="foto" class="form-label">Foto del Árbol</label>
-                    <input type="url" name="foto_url" class="form-control" placeholder="URL de la foto del árbol">
                     <input type="file" name="foto_upload" class="form-control mt-2" accept="image/*">
                 </div>
                 <div class="mb-3">
@@ -240,77 +325,141 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
-        <!-- Pestaña Registrar Actualización de Árbol -->
-        <div class="tab-pane fade <?php echo (isset($_GET['tab']) && $_GET['tab'] == 'actualizacion') ? 'show active' : ''; ?>" id="actualizacion">
-            <div class="card my-4">
-                <div class="card-body">
-                    <form action="admin.php" method="POST">
-                        <input type="hidden" name="accion_actualizacion" value="registrar">
-                        <div class="mb-3">
-                            <label for="arbol_id" class="form-label">ID del Árbol</label>
-                            <input type="number" name="arbol_id" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="tamano" class="form-label">Tamaño Actual</label>
-                            <input type="text" name="tamano" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="estado" class="form-label">Estado Actual</label>
-                            <select name="estado" class="form-control" required>
-                                <option value="Disponible">Disponible</option>
-                                <option value="Vendido">Vendido</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-success">Registrar Actualización</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pestaña Ver Amigos -->
-        <div class="tab-pane fade <?php echo (isset($_GET['tab']) && $_GET['tab'] == 'amigos') ? 'show active' : ''; ?>" id="amigos">
-            <div class="card my-4">
-                <div class="card-body">
-                    <h5 class="mt-4">Lista de Amigos</h5>
-                    <?php
-                    $amigos = obtenerAmigos();
-                    foreach ($amigos as $amigo): ?>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span><?php echo $amigo['nombre']; ?></span>
-                            <a href="admin.php?tab=amigos&amigo_id=<?php echo $amigo['id']; ?>" class="btn btn-info">Ver Árboles</a>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <!-- Árboles del Amigo Seleccionado -->
-            <?php if (isset($_GET['amigo_id'])): ?>
-                <div class="card my-4">
-                    <div class="card-body">
-                        <h5 class="mt-4">Árboles de <?php echo obtenerNombreAmigo($_GET['amigo_id']); ?></h5>
-                        <?php
-                        $arboles = obtenerArbolesPorAmigo($_GET['amigo_id']);
-                        foreach ($arboles as $arbol): ?>
-                            <form action="admin.php?tab=amigos&amigo_id=<?php echo $_GET['amigo_id']; ?>" method="POST" class="d-flex justify-content-between align-items-center mt-2">
-                                <input type="hidden" name="accion_arbol" value="actualizar">
-                                <input type="hidden" name="arbol_id" value="<?php echo $arbol['id']; ?>">
-                                <input type="text" name="tamano" value="<?php echo $arbol['tamano']; ?>" class="form-control me-2">
-                                <input type="text" name="ubicacion_geografica" value="<?php echo $arbol['ubicacion_geografica']; ?>" class="form-control me-2">
-                                <select name="estado" class="form-control me-2">
-                                    <option value="Disponible" <?php if ($arbol['estado'] == 'Disponible') echo 'selected'; ?>>Disponible</option>
-                                    <option value="Vendido" <?php if ($arbol['estado'] == 'Vendido') echo 'selected'; ?>>Vendido</option>
-                                </select>
-                                <button type="submit" class="btn btn-primary">Actualizar</button>
-                                <button type="submit" formaction="admin.php" name="accion_arbol" value="eliminar" class="btn btn-danger">Eliminar</button>
-                            </form>
+     <!-- Pestaña Registrar Actualización de Árbol -->
+<div class="tab-pane fade <?php echo (isset($_GET['tab']) && $_GET['tab'] == 'actualizacion') ? 'show active' : ''; ?>" id="actualizacion">
+    <div class="card my-4">
+        <div class="card-body">
+            <form action="admin.php" method="POST">
+                <input type="hidden" name="accion_actualizacion" value="registrar">
+                
+                <div class="mb-3">
+                    <label for="arbol_id" class="form-label">Seleccionar ID del Árbol</label>
+                    <select name="arbol_id" id="arbol_id" class="form-control" required onchange="cargarDatosArbol(this.value)">
+                        <option value="">Seleccione un árbol</option>
+                        <?php foreach ($arboles as $arbol): ?>
+                            <option value="<?php echo $arbol['id']; ?>"><?php echo $arbol['id']; ?></option>
                         <?php endforeach; ?>
-                    </div>
+                    </select>
                 </div>
-            <?php endif; ?>
+
+                <div class="mb-3">
+                    <label for="tamano" class="form-label">Tamaño Actual</label>
+                    <input type="text" name="tamano" id="tamano" class="form-control" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="estado" class="form-label">Estado Actual</label>
+                    <select name="estado" id="estado" class="form-control" required>
+                        <option value="Disponible">Disponible</option>
+                        <option value="Vendido">Vendido</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="fecha_opcion" class="form-label">Fecha de Actualización</label>
+                    <select name="fecha_opcion" id="fecha_opcion" class="form-control" onchange="toggleFechaManual(this.value)">
+                        <option value="hoy">Usar fecha de hoy</option>
+                        <option value="manual">Ingresar fecha manual</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="fecha_manual" style="display: none;">
+                    <label for="fecha_manual_input" class="form-label">Fecha Manual</label>
+                    <input type="date" name="fecha_manual_input" id="fecha_manual_input" class="form-control">
+                </div>
+                
+                <button type="submit" class="btn btn-success">Registrar Actualización</button>
+            </form>
         </div>
     </div>
 </div>
-   
+
+<script>
+// Mostrar u ocultar campo de fecha manual
+function toggleFechaManual(opcion) {
+    document.getElementById('fecha_manual').style.display = (opcion === 'manual') ? 'block' : 'none';
+}
+
+// Cargar datos del árbol seleccionado
+function cargarDatosArbol(arbol_id) {
+    const arboles = <?php echo json_encode($arboles); ?>;
+    const arbol = arboles.find(a => a.id == arbol_id);
+
+    if (arbol) {
+        document.getElementById('tamano').value = arbol.tamano;
+        document.getElementById('estado').value = arbol.estado;
+    } else {
+        document.getElementById('tamano').value = '';
+        document.getElementById('estado').value = 'Disponible';
+    }
+}
+</script>
+       <!-- Pestaña Ver Amigos -->
+<div class="tab-pane fade <?php echo (isset($_GET['tab']) && $_GET['tab'] == 'amigos') ? 'show active' : ''; ?>" id="amigos">
+    <div class="card my-4">
+        <div class="card-body">
+            <h5 class="mt-4">Lista de Amigos</h5>
+            <?php
+            // Obtener lista de amigos
+            $amigos = obtenerAmigos();
+            foreach ($amigos as $amigo): ?>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span><?php echo $amigo['nombre']; ?></span>
+                    <a href="admin.php?tab=amigos&amigo_id=<?php echo $amigo['id']; ?>" class="btn btn-info">Ver Árboles</a>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<!-- Árboles del Amigo Seleccionado -->
+<?php if (isset($_GET['amigo_id'])): ?>
+    <div class="card my-4">
+        <div class="card-body">
+            <h5 class="mt-4">Árboles de <?php echo obtenerNombreAmigo($_GET['amigo_id']); ?></h5>
+            <?php
+            $arboles = obtenerArbolesPorAmigo($_GET['amigo_id']);
+            $especies = obtenerEspecies(); // Asume que esta función obtiene todas las especies
+            foreach ($arboles as $arbol):
+            ?>
+                <form action="admin.php?tab=amigos&amigo_id=<?php echo $_GET['amigo_id']; ?>" method="POST" enctype="multipart/form-data" class="d-flex justify-content-between align-items-center mt-2">
+                    <input type="hidden" name="accion_arbol" value="actualizar">
+                    <input type="hidden" name="arbol_id" value="<?php echo $arbol['id']; ?>">
+
+                    <!-- Selección de especie -->
+                    <select name="especie_id" class="form-control me-2" required>
+                        <?php foreach ($especies as $especie): ?>
+                            <option value="<?php echo $especie['id']; ?>" <?php echo ($arbol['especie_id'] == $especie['id']) ? 'selected' : ''; ?>>
+                                <?php echo $especie['nombre_comercial']; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <!-- Tamaño -->
+                    <input type="text" name="tamano" value="<?php echo $arbol['tamano']; ?>" class="form-control me-2" placeholder="Tamaño">
+
+                    <!-- Ubicación geográfica -->
+                    <input type="text" name="ubicacion_geografica" value="<?php echo $arbol['ubicacion_geografica']; ?>" class="form-control me-2" placeholder="Ubicación Geográfica">
+
+                    <!-- Estado -->
+                    <select name="estado" class="form-control me-2">
+                        <option value="Disponible" <?php echo ($arbol['estado'] === 'Disponible') ? 'selected' : ''; ?>>Disponible</option>
+                        <option value="Vendido" <?php echo ($arbol['estado'] === 'Vendido') ? 'selected' : ''; ?>>Vendido</option>
+                    </select>
+
+                    <!-- Foto -->
+                    <input type="file" name="foto_upload" class="form-control me-2" accept="image/*">
+                    <?php if (!empty($arbol['foto'])): ?>
+                        <a href="<?php echo $arbol['foto']; ?>" target="_blank">Ver Imagen Actual</a>
+                    <?php endif; ?>
+
+                    <!-- Botones de acción -->
+                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                </form>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+
     <?php include 'inc/footer.php'; ?>
 
     <!-- Vincula el JS de Bootstrap al final del body -->
